@@ -72,10 +72,10 @@ pipeline {
         }
         stage('Build docker image') {
             steps {
-                sshagent (['ansible-key']) {
+                sshagent (['Ansible-key']) {
                       // Install Docker collection first
-                      sh 'ssh -t -t ec2-user@15.188.80.210 -o strictHostKeyChecking=no "ansible-galaxy collection install community.docker"'
-                      sh 'ssh -t -t ec2-user@15.188.80.210 -o strictHostKeyChecking=no "cd /etc/ansible && ansible-playbook /opt/docker/docker-image.yml"'
+                      sh 'ssh -t -t ec2-user@15.236.62.187 -o strictHostKeyChecking=no "ansible-galaxy collection install community.docker"'
+                      sh 'ssh -t -t ec2-user@15.236.62.187 -o strictHostKeyChecking=no "cd /etc/ansible && ansible-playbook /opt/docker/docker-image.yml"'
                   }
               }
         }
@@ -86,9 +86,9 @@ pipeline {
         }
         stage('Trigger Ansible to deploy app') {
             steps {
-                sshagent (['ansible-key']) {
-                      sh 'ssh -t -t ec2-user@15.188.80.210 -o strictHostKeyChecking=no "cd /etc/ansible && ansible-playbook /opt/docker/docker-container.yml"'
-                      sh 'ssh -t -t ec2-user@15.188.80.210 -o strictHostKeyChecking=no "cd /etc/ansible && ansible-playbook /opt/docker/newrelic-container.yml"'
+                sshagent (['Ansible-key']) {
+                      sh 'ssh -t -t ec2-user@15.236.62.187 -o strictHostKeyChecking=no "cd /etc/ansible && ansible-playbook /opt/docker/docker-container.yml"'
+                      sh 'ssh -t -t ec2-user@15.236.62.187 -o strictHostKeyChecking=no "cd /etc/ansible && ansible-playbook /opt/docker/newrelic-container.yml"'
                   }
               }
         }
