@@ -31,15 +31,12 @@ pipeline {
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
-        stage('Install Checkov') {
+       stage('Install Checkov') {
             steps {
                 sh '''
-                # Install necessary dependencies without using sudo
-                yum install -y python3 python3-pip
+                sudo yum install -y python3 python3-pip
                 python3 -m pip install --upgrade pip
                 python3 -m pip install --user checkov --quiet
-                
-                # Check if Checkov was installed successfully
                 CHECKOV_PATH=$(python3 -m site --user-base)/bin
                 $CHECKOV_PATH/checkov --version || echo "Checkov installation failed"
                 '''
@@ -48,7 +45,6 @@ pipeline {
         stage('Checkov Scan') {
             steps {
                 sh '''
-                # Run Checkov scan
                 CHECKOV_PATH=$(python3 -m site --user-base)/bin
                 $CHECKOV_PATH/checkov -d . --output cli --soft-fail
                 '''
@@ -77,11 +73,11 @@ pipeline {
         stage('Build docker image') {
             steps {
                 sshagent (['ansible-key']) {
-                    // Install Docker collection first
-                    sh 'ssh -t -t ec2-user@35.181.77.196 -o strictHostKeyChecking=no "ansible-galaxy collection install community.docker"'
-                    sh 'ssh -t -t ec2-user@35.181.77.196 -o strictHostKeyChecking=no "cd /etc/ansible && ansible-playbook /opt/docker/docker-image.yml"'
-                }
-            }
+                      // Install Docker collection first
+                      sh 'ssh -t -t ec2-user@35.181.77.196 -o strictHostKeyChecking=no "ansible-galaxy collection install community.docker"'
+                      sh 'ssh -t -t ec2-user@35.181.77.196 -o strictHostKeyChecking=no "cd /etc/ansible && ansible-playbook /opt/docker/docker-image.yml"'
+                  }
+              }
         }
         stage('Trivy image scan') {
             steps {
@@ -91,10 +87,10 @@ pipeline {
         stage('Trigger Ansible to deploy app') {
             steps {
                 sshagent (['ansible-key']) {
-                    sh 'ssh -t -t ec2-user@35.181.77.196 -o strictHostKeyChecking=no "cd /etc/ansible && ansible-playbook /opt/docker/docker-container.yml"'
-                    sh 'ssh -t -t ec2-user@35.181.77.196 -o strictHostKeyChecking=no "cd /etc/ansible && ansible-playbook /opt/docker/newrelic-container.yml"'
-                }
-            }
+                      sh 'ssh -t -t ec2-user@35.181.77.196 -o strictHostKeyChecking=no "cd /etc/ansible && ansible-playbook /opt/docker/docker-container.yml"'
+                      sh 'ssh -t -t ec2-user@35.181.77.196 -o strictHostKeyChecking=no "cd /etc/ansible && ansible-playbook /opt/docker/newrelic-container.yml"'
+                  }
+              }
         }
         stage('slack notification') {
             steps {
