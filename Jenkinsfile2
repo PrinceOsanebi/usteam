@@ -86,7 +86,7 @@ pipeline {
         }
         stage('Trigger Ansible to deploy app') {
             steps {
-                sshagent (['ansible-key']) {
+                sshagent (['Jenkins-key']) {
                       sh 'ssh -t -t ec2-user@35.180.50.177 -o strictHostKeyChecking=no "cd /etc/ansible && ansible-playbook /opt/docker/docker-container.yml"'
                       sh 'ssh -t -t ec2-user@35.180.50.177 -o strictHostKeyChecking=no "cd /etc/ansible && ansible-playbook /opt/docker/newrelic-container.yml"'
                   }
