@@ -2,16 +2,33 @@
 
 <html xmlns:th="https://www.thymeleaf.org" th:replace="~{fragments/layout :: layout (~{::body},'home')}">
 
+  <head>
+    <style>
+      /* CSS for noticeable change */
+      .noticeable-update {
+        font-weight: 900; /* Very bold */
+        font-size: 60px;  /* Very large font size */
+        color: #FF6347;   /* Bright color (Tomato red) */
+        background-color: #FFFF00; /* Bright background color (Yellow) */
+        padding: 20px;
+        text-align: center;
+        border-radius: 10px; /* Rounded corners */
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+      }
+    </style>
+  </head>
+
   <body>
 
-    <h1 th:text="#{Welcome to my Pet Adoption School}">Welcome to my Pet Adoption School}</h1>
+    <h1 th:text="#{Welcome to my Pet Adoption School}">Welcome to my Pet Adoption School</h1>
     <div class="row">
         <div class="col-md-12">
           <img class="img-responsive" src="../static/resources/images/peto.jpg" th:src="@{/resources/images/peto.jpg}"/>
         </div>
     </div>
 
-     <p>Latest update: Pet Adoption School now offering virtual tours!</p>
+    <!-- The noticeable update -->
+    <p class="noticeable-update">Latest update: Pet Adoption School now offering virtual tours!</p>
 
   </body>
 
