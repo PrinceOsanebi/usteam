@@ -5,7 +5,7 @@ pipeline {
             steps {
                 git branch: 'main',
                 credentialsId: 'git-cred',
-                url: 'https://github.com/muhammsaleem/usteam.git'
+                url: 'https://github.com/PrinceOsanebi/usteam.git'
             }
         }
         stage('Code Analysis') {
