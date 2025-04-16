@@ -79,7 +79,7 @@ pipeline {
             steps {
                 sshagent(['ansible-key']) {
                     sh '''
-                         ssh -t -t -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no ubuntu@${BASTION_IP}" ubuntu@${ANSIBLE_IP} "ansible-playbook -i /etc/ansible/stage_host /etc/ansible/deployment.yml"
+                         ssh -t -t -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no ec2-user@${BASTION_IP}" ec2-user@${ANSIBLE_IP} "ansible-playbook -i /etc/ansible/stage_host /etc/ansible/deployment.yml"
                    '''
                 }
             }
@@ -109,7 +109,7 @@ pipeline {
             steps {
                 sshagent(['ansible-key']) {
                     sh '''
-                         ssh -t -t -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no ubuntu@${BASTION_IP}" ubuntu@${ANSIBLE_IP} "ansible-playbook -i /etc/ansible/prod_host /etc/ansible/deployment.yml"
+                         ssh -t -t -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no ec2-user@${BASTION_IP}" ec2-user@${ANSIBLE_IP} "ansible-playbook -i /etc/ansible/prod_host /etc/ansible/deployment.yml"
                    '''
                 }
             }
