@@ -5,8 +5,8 @@ pipeline {
         NEXUS_PASSWORD = credentials('nexus-password')
         NEXUS_REPO = credentials('nexus-docker-repo')
         NVD_API_KEY= credentials('nvd-key')
-        ANSIBLE_IP = '10.0.3.92'
-        BASTION_IP = '52.56.33.142'
+        ANSIBLE_IP = credentials('ansible-ip')
+        BASTION_IP = credentials('bastion-ip')
     }
     stages {
         stage('Code analisys stage') {
