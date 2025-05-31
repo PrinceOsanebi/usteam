@@ -87,9 +87,9 @@ pipeline {
         stage('check stage website availability') {
             steps {
                  sh "sleep 90"
-                 sh "curl -s -o /dev/null -w \"%{http_code}\" http://stage.edenboutique.space"
+                 sh "curl -s -o /dev/null -w \"%{http_code}\" https://stage.edenboutique.space"
                 script {
-                    def response = sh(script: "curl -s -o /dev/null -w \"%{http_code}\" http://stage.edenboutique.space", returnStdout: true).trim()
+                    def response = sh(script: "curl -s -o /dev/null -w \"%{http_code}\" https://stage.edenboutique.space", returnStdout: true).trim()
                     if (response == "200") {
                         slackSend(color: 'good', message: "The stage petclinic website is up and running with HTTP status code ${response}.", tokenCredentialId: 'slack')
                     } else {
@@ -117,9 +117,9 @@ pipeline {
         stage('check prod website availability') {
             steps {
                  sh "sleep 200"
-                 sh "curl -s -o /dev/null -w \"%{http_code}\" http://stage.edenboutique.space"
+                 sh "curl -s -o /dev/null -w \"%{http_code}\" https://www.edenboutique.space"
                 script {
-                    def response = sh(script: "curl -s -o /dev/null -w \"%{http_code}\" http://stage.edenboutique.space", returnStdout: true).trim()
+                    def response = sh(script: "curl -s -o /dev/null -w \"%{http_code}\" https://www.edenboutique.space", returnStdout: true).trim()
                     if (response == "200") {
                         slackSend(color: 'good', message: "The prod petclinic website is up and running with HTTP status code ${response}.", tokenCredentialId: 'slack')
                     } else {
