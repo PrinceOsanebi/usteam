@@ -69,25 +69,7 @@ pipeline{
         }
         stage('Trivy Image Scan') {
             steps {
-                script {
-                    def image = "${NEXUS_REPO}/petclinicapps"
-                    sh """
-                        trivy image \
-                          --format template \
-                          --template '/usr/local/share/trivy/templates/html.tpl' \
-                          -o imageReport.html \
-                          ${image}
-                    """
-                }
-        
-                publishHTML([
-                    allowMissing: false,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: '.',
-                    reportFiles: 'imageReport.html',
-                    reportName: 'Trivy Image Vulnerability Report'
-                ])
+                sh "trivy image -f table -o trivyreport.txt $NEXUS_REPO/petclinicapps"
             }
         }
         stage('Push to Nexus Docker Repo') {
