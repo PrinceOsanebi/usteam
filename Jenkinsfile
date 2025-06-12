@@ -74,7 +74,7 @@ pipeline{
                     sh """
                         trivy image \
                           --format template \
-                          --template '@contrib/html.tpl' \
+                          --template '/usr/local/share/trivy/templates/html.tpl' \
                           -o imageReport.html \
                           ${image}
                     """
