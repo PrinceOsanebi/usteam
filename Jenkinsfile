@@ -67,9 +67,27 @@ pipeline{
                 sh 'docker login --username $NEXUS_USER --password $NEXUS_PASSWORD $NEXUS_REPO'
             }
         }
-        stage('Trivy image Scan') {
+        stage('Trivy Image Scan') {
             steps {
-                sh "trivy image --format template --template "@contrib/html.tpl" -o imageReport.html $NEXUS_REPO/petclinicapps"
+                script {
+                    def image = "${NEXUS_REPO}/petclinicapps"
+                    sh """
+                        trivy image \
+                          --format template \
+                          --template '@contrib/html.tpl' \
+                          -o imageReport.html \
+                          ${image}
+                    """
+                }
+        
+                publishHTML([
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: '.',
+                    reportFiles: 'imageReport.html',
+                    reportName: 'Trivy Image Vulnerability Report'
+                ])
             }
         }
         stage('Push to Nexus Docker Repo') {
