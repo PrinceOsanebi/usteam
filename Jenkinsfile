@@ -17,8 +17,7 @@ pipeline {
     }
 
     triggers {
-        Only use pollSCM if absolutely necessary
-        pollSCM('* * * * *') // Uncomment if required
+               pollSCM('* * * * *') // Uncomment if required
     }
 
     stages {
