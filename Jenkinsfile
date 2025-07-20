@@ -3,12 +3,12 @@ pipeline{
     environment {
         NEXUS_USER = credentials('nexus-username')
         NEXUS_PASSWORD = credentials('nexus-password')
-        NEXUS_REPO = credentials('nexus-ip-port')
+        NEXUS_REPO = credentials('docker-repo')
         BASTION_IP = credentials('bastion-ip')
         ANSIBLE_IP = credentials('ansible-ip')
         NVD_API_KEY= credentials('nvd-key')
         BASTION_ID= credentials('bastion-id')
-        AWS_REGION= 'eu-west-2'
+        AWS_REGION= 'eu-west-1'
     }
     triggers {
         pollSCM('* * * * *') // Runs every minute
@@ -50,7 +50,7 @@ pipeline{
                 type: 'war']],
                 credentialsId: 'nexus-cred',
                 groupId: 'Petclinic',
-                nexusUrl: 'nexus.eamanzebuzz.com.ng',
+                nexusUrl: 'nexus.pmolabs.space',
                 nexusVersion: 'nexus3',
                 protocol: 'https',
                 repository: 'nexus-repo',
@@ -121,9 +121,9 @@ pipeline{
         stage('check stage website availability') {
             steps {
                  sh "sleep 90"
-                 sh "curl -s -o /dev/null -w \"%{http_code}\" https://stage.eamanzebuzz.com.ng"
+                 sh "curl -s -o /dev/null -w \"%{http_code}\" https://stage.pmolabs.space"
                 script {
-                    def response = sh(script: "curl -s -o /dev/null -w \"%{http_code}\" https://stage.eamanzebuzz.com.ng", returnStdout: true).trim()
+                    def response = sh(script: "curl -s -o /dev/null -w \"%{http_code}\" https://stage.pmolabs.space", returnStdout: true).trim()
                     if (response == "200") {
                         slackSend(color: 'good', message: "The stage petclinic java application is up and running with HTTP status code ${response}.", tokenCredentialId: 'slack')
                     } else {
@@ -169,9 +169,9 @@ pipeline{
         stage('check prod website availability') {
             steps {
                  sh "sleep 90"
-                 sh "curl -s -o /dev/null -w \"%{http_code}\" https://prod.eamanzebuzz.com.ng"
+                 sh "curl -s -o /dev/null -w \"%{http_code}\" https://prod.pmolabs.space"
                 script {
-                    def response = sh(script: "curl -s -o /dev/null -w \"%{http_code}\" https://prod.eamanzebuzz.com.ng", returnStdout: true).trim()
+                    def response = sh(script: "curl -s -o /dev/null -w \"%{http_code}\" https://prod.pmolabs.space", returnStdout: true).trim()
                     if (response == "200") {
                         slackSend(color: 'good', message: "The prod petclinic java application is up and running with HTTP status code ${response}.", tokenCredentialId: 'slack')
                     } else {
