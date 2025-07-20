@@ -3,7 +3,15 @@ pipeline{
     environment {
         NEXUS_USER = credentials('nexus-username')
         NEXUS_PASSWORD = credentials('nexus-password')
-        NEXUS_REPO = credentials('nexus-repo')
+        NEXUS_REPO = credentials('docker-repo')
+        BASTION_IP = credentials('bastion-ip')
+        ANSIBLE_IP = credentials('ansible-ip')
+        NVD_API_KEY= credentials('nvd-key')
+        BASTION_ID= credentials('bastion-id')
+        AWS_REGION= 'eu-west-1'
+    }
+    triggers {
+        pollSCM('* * * * *') // Runs every minute
     }
     stages {
         stage('Code Analysis') {
@@ -20,25 +28,18 @@ pipeline{
                 }
             }
         }
-        stage('Dependency Check') {
+        stage('Dependency check') {
             steps {
-                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
+                withCredentials([string(credentialsId: 'nvd-key', variable: 'NVD_API_KEY')]) {
+                    dependencyCheck additionalArguments: "--scan ./ --disableYarnAudit --disableNodeAudit --nvdApiKey $NVD_API_KEY",
+                        odcInstallation: 'DP-Check'
+                }
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
-        // stage('Test Code') {
-        //     steps {
-        //         sh 'mvn test -Dcheckstyle.skip'
-        //     }
-        // }
         stage('Build Artifact') {
             steps {
                 sh 'mvn clean package -DskipTests -Dcheckstyle.skip'
-            }
-        }
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t $NEXUS_REPO/petclinicapps .'
             }
         }
         stage('Push Artifact to Nexus Repo') {
@@ -47,18 +48,18 @@ pipeline{
                 classifier: '',
                 file: 'target/spring-petclinic-2.4.2.war',
                 type: 'war']],
-                credentialsId: 'nexus-creds',
+                credentialsId: 'nexus-cred',
                 groupId: 'Petclinic',
-                nexusUrl: 'nexus.tundeafod.click',
+                nexusUrl: 'nexus.pmolabs.space',
                 nexusVersion: 'nexus3',
                 protocol: 'https',
                 repository: 'nexus-repo',
                 version: '1.0'
             }
         }
-        stage('Trivy fs Scan') {
+        stage('Build Docker Image') {
             steps {
-                sh "trivy fs . > trivyfs.txt"
+                sh 'docker build -t $NEXUS_REPO/petclinicapps .'
             }
         }
         stage('Log Into Nexus Docker Repo') {
@@ -66,29 +67,54 @@ pipeline{
                 sh 'docker login --username $NEXUS_USER --password $NEXUS_PASSWORD $NEXUS_REPO'
             }
         }
+        stage('Trivy image Scan') {
+            steps {
+                sh "trivy image -f table $NEXUS_REPO/petclinicapps > trivyfs.txt"
+            }
+        }
         stage('Push to Nexus Docker Repo') {
             steps {
                 sh 'docker push $NEXUS_REPO/petclinicapps'
             }
         }
-        stage('Trivy image Scan') {
+        stage('prune docker images') {
             steps {
-                sh "trivy image $NEXUS_REPO/petclinicapps > trivyfs.txt"
+                sh 'docker image prune -f'
             }
         }
-        stage('Deploy to stage') {
-            steps {
+        stage ('Deploying to Stage Environment') {
+          steps {
+              script {
+                // Start SSM session to bastion with port forwarding for SSH (port 22)
+                sh '''
+                  aws ssm start-session \
+                    --target ${BASTION_ID} \
+                    --region ${AWS_REGION} \
+                    --document-name AWS-StartPortForwardingSession \
+                    --parameters '{"portNumber":["22"],"localPortNumber":["9999"]}' \
+                    &
+                  sleep 5  # Wait for port forwarding to establish
+                '''
+                // SSH through the tunnel to Ansible server on port 22
                 sshagent(['ansible-key']) {
-                    sh 'ssh -t -t ec2-user@3.8.33.146 -o strictHostKeyChecking=no "ansible-playbook -i /etc/ansible/stage-hosts /etc/ansible/stage-playbook.yml"'
+                  sh '''
+                    ssh -o StrictHostKeyChecking=no \
+                        -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no ubuntu@localhost -p 9999" \
+                        ec2-user@${ANSIBLE_IP} \
+                        "ansible-playbook -i /etc/ansible/stage_hosts /etc/ansible/deployment.yml"
+                  '''
                 }
-            }
+                // Terminate the SSM session
+                sh 'pkill -f "aws ssm start-session"'
+              }
+          }
         }
         stage('check stage website availability') {
             steps {
                  sh "sleep 90"
-                 sh "curl -s -o /dev/null -w \"%{http_code}\" https://stage.tundeafod.click"
+                 sh "curl -s -o /dev/null -w \"%{http_code}\" https://stage.pmolabs.space"
                 script {
-                    def response = sh(script: "curl -s -o /dev/null -w \"%{http_code}\" https://stage.tundeafod.click", returnStdout: true).trim()
+                    def response = sh(script: "curl -s -o /dev/null -w \"%{http_code}\" https://stage.pmolabs.space", returnStdout: true).trim()
                     if (response == "200") {
                         slackSend(color: 'good', message: "The stage petclinic java application is up and running with HTTP status code ${response}.", tokenCredentialId: 'slack')
                     } else {
@@ -104,19 +130,39 @@ pipeline{
                 }
             }
         }
-        stage('Deploy to prod') {
-            steps {
+        stage ('Deploying to prod Environment') {
+          steps {
+              script {
+                // Start SSM session to bastion with port forwarding for SSH (port 22)
+                sh '''
+                  aws ssm start-session \
+                    --target ${BASTION_ID} \
+                    --region ${AWS_REGION} \
+                    --document-name AWS-StartPortForwardingSession \
+                    --parameters '{"portNumber":["22"],"localPortNumber":["9999"]}' \
+                    &
+                  sleep 5  # Wait for port forwarding to establish
+                '''
+                // SSH through the tunnel to Ansible server on port 22
                 sshagent(['ansible-key']) {
-                    sh 'ssh -t -t ec2-user@3.8.33.146 -o strictHostKeyChecking=no "ansible-playbook -i /etc/ansible/prod-hosts /etc/ansible/prod-playbook.yml"'
+                  sh '''
+                    ssh -o StrictHostKeyChecking=no \
+                        -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no ubuntu@localhost -p 9999" \
+                        ec2-user@${ANSIBLE_IP} \
+                        "ansible-playbook -i /etc/ansible/prod_hosts /etc/ansible/deployment.yml"
+                  '''
                 }
-            }
+                // Terminate the SSM session
+                sh 'pkill -f "aws ssm start-session"'
+              }
+          }
         }
         stage('check prod website availability') {
             steps {
                  sh "sleep 90"
-                 sh "curl -s -o /dev/null -w \"%{http_code}\" https://prod.tundeafod.click"
+                 sh "curl -s -o /dev/null -w \"%{http_code}\" https://prod.pmolabs.space"
                 script {
-                    def response = sh(script: "curl -s -o /dev/null -w \"%{http_code}\" https://prod.tundeafod.click", returnStdout: true).trim()
+                    def response = sh(script: "curl -s -o /dev/null -w \"%{http_code}\" https://prod.pmolabs.space", returnStdout: true).trim()
                     if (response == "200") {
                         slackSend(color: 'good', message: "The prod petclinic java application is up and running with HTTP status code ${response}.", tokenCredentialId: 'slack')
                     } else {
@@ -128,4 +174,3 @@ pipeline{
     }
 }
     
-
