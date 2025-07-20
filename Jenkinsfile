@@ -10,6 +10,11 @@ pipeline{
         BASTION_ID= credentials('bastion-id')
         AWS_REGION= 'eu-west-1'
     }
+
+    parameters {
+        choice(name: 'action', choices: ['apply', 'destroy'], description: 'Select the action to perform')
+    }
+    
     triggers {
         pollSCM('* * * * *') // Runs every minute
     }
